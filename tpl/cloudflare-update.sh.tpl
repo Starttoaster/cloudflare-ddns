@@ -49,7 +49,7 @@ function getSub {
 }
 # Finds current IP address and sends it to a DNS A Record
 function setIP {
-	IP=$(curl -4 ifconfig.co)	
+	IP=$(curl -s4 ifconfig.co)	
 	curl -sX PUT "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
              -H "X-Auth-Email: "$EMAIL"" \
              -H "X-Auth-Key: "$GAPIK"" \

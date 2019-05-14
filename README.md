@@ -16,6 +16,8 @@ ever change, this script (while ran on the same machine as the webserver) ensure
 
   1. Clone the repo: `git clone https://github.com/Starttoaster/cloudflare-ddns.git`
 
-  2. Run the script: `./cloudflare-ddns/cloudflare.sh`
+  2. Change directory: `cd cloudflare-ddns/`
+
+  3. Run the script: `./cloudflare.sh`
 
 After answering a few questions, the script will complete. You can then run the same script again to update your A Records, or configure as a task in Crontab to run automatically.

@@ -15,24 +15,26 @@ function getIdent {
              -H "X-Auth-Email: "$EMAIL"" \
              -H "X-Auth-Key: "$GAPIK"" \
              -H "Content-Type: application/json" \
-             | python -m json.tool \
+             | tr '[' '\n' \
+             | tr ',' '\n' \
              | grep "id" \
              | grep -v "zone" \
              | sed 's/ //g' \
-             | sed 's/"id":"//g' \
-             | sed 's/",//g'
+             | sed 's/{"id":"//g' \
+             | sed 's/"//g'
 }
 # Gets the type of DNS Record
 function getType {
-	curl -sX GET "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
+        curl -sX GET "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
              -H "X-Auth-Email: "$EMAIL"" \
              -H "X-Auth-Key: "$GAPIK"" \
              -H "Content-Type: application/json" \
-             | python -m json.tool \
+             | tr '[' '\n' \
+             | tr ',' '\n' \
              | grep "type" \
              | sed 's/ //g' \
              | sed 's/"type":"//g' \
-             | sed 's/",//g'
+             | sed 's/"//g'
 }
 # Gets the subdomain corresponding to an Identifier
 function getSub {
@@ -40,25 +42,38 @@ function getSub {
              -H "X-Auth-Email: "$EMAIL"" \
              -H "X-Auth-Key: "$GAPIK"" \
              -H "Content-Type: application/json" \
-             | python -m json.tool \
+             | tr '[' '\n' \
+             | tr ',' '\n' \
              | grep "name" \
              | grep -v "zone" \
              | sed 's/ //g' \
              | sed 's/"name":"//g' \
-     	     | cut -f1 -d"."
+             | cut -f1 -d"."
+}
+# Gets the boolean value of if the subdomain is using Cloudflare's proxy service
+function getProxy {
+        wget --no-check-certificate --header="X-Auth-Email: "$EMAIL"" --header="X-Auth-Key: "$GAPIK"" \
+             -qO- "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
+             | tr '[' '\n' \
+             | tr ',' '\n' \
+             | sed 's/{//g' \
+             | grep "proxied" \
+             | sed 's/"proxied"://g' \
+             | sed 's/"//g'
 }
 # Finds current IP address and sends it to a DNS A Record
 function setIP {
-	IP=$(curl -s4 ifconfig.co)	
-	curl -sX PUT "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
+        IP=$(curl -s4 ifconfig.co)
+        curl -sX PUT "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
              -H "X-Auth-Email: "$EMAIL"" \
              -H "X-Auth-Key: "$GAPIK"" \
              -H "Content-Type: application/json" \
-             --data '{"type":"A","name":"'$SUB'","content":"'$IP'"}' \
-             | python -m json.tool \
-	     | grep "content\|name\|success" \
-	     | grep -v "zone" \
-             | sed 's/ //g' 
+             --data '{"type":"A","name":"'$SUB'","content":"'$IP'","proxied":'$PROXY'}' \
+             | tr '[' '\n' \
+             | tr ',' '\n' \
+             | grep "content\|name\|proxied\|success" \
+             | grep -v "zone" \
+             | sed 's/ //g'
 }
 
 #
@@ -67,6 +82,8 @@ function setIP {
 getIdent | while read -r IDENT; do
         if [ $(getType) = "A" ]; then
                 SUB=$(getSub)
+                PROXY=$(getProxy)
                 setIP
-	fi;done
-
+                echo "-----------------"
+        fi;done
+echo "*****************"

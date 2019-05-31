@@ -5,6 +5,11 @@ EMAIL=%%EMAIL%%
 GAPIK=%%GAPIK%%
 ZONE=%%ZONE%%
 
+if [ -z "$GAPIK" ] || [ -z "$EMAIL" ] || [ -z "$ZONE" ]; then
+    echo "Missing required environment variables!!" 1>&2
+    exit 1
+fi
+
 #
 # Functions
 #
@@ -52,8 +57,10 @@ function getSub {
 }
 # Gets the boolean value of if the subdomain is using Cloudflare's proxy service
 function getProxy {
-        wget --no-check-certificate --header="X-Auth-Email: "$EMAIL"" --header="X-Auth-Key: "$GAPIK"" \
-             -qO- "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
+        curl -sX GET "https://api.cloudflare.com/client/v4/zones/"$ZONE"/dns_records/"$IDENT"" \
+             -H "X-Auth-Email: "$EMAIL"" \
+             -H "X-Auth-Key: "$GAPIK"" \
+             -H "Content-Type: application/json" \
              | tr '[' '\n' \
              | tr ',' '\n' \
              | sed 's/{//g' \
